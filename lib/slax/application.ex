@@ -14,6 +14,7 @@ defmodule Slax.Application do
       {Phoenix.PubSub, name: Slax.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: Slax.Finch},
+      SlaxWeb.Presence,
       # Start a worker by calling: Slax.Worker.start_link(arg)
       # {Slax.Worker, arg},
       # Start to serve requests, typically the last entry
