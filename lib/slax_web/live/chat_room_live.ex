@@ -8,6 +8,8 @@ defmodule SlaxWeb.ChatRoomLive do
   alias Slax.Chat.{Message, Room}
   alias SlaxWeb.OnlineUsers
 
+  import SlaxWeb.RoomComponents
+
   def render(assigns) do
     ~H"""
     <div class="flex flex-col shrink-0 w-64 bg-slate-100">
@@ -219,18 +221,7 @@ defmodule SlaxWeb.ChatRoomLive do
       id="new-room-modal"
     >
       <.header>New chat room</.header>
-      <.simple_form
-        for={@new_room_form}
-        id="room-form"
-        phx-change="validate-room"
-        phx-submit="save-room"
-      >
-        <.input field={@new_room_form[:name]} type="text" label="Name" phx-debounce />
-        <.input field={@new_room_form[:topic]} type="text" label="Topic" phx-debounce />
-        <:actions>
-          <.button phx-disable-with="Saving..." class="w-full">Save</.button>
-        </:actions>
-      </.simple_form>
+      <.room_form form={@new_room_form} />
     </.modal>
     """
   end
