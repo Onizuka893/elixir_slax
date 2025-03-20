@@ -102,7 +102,16 @@ defmodule SlaxWeb.ChatRoomLive do
         </div>
         <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
           <li class="text-[0.8125rem] leading-6 text-zinc-900">
-            {@current_user.username}
+            <div class="text-sm leading-10">
+              <.link
+                class="flex gap-4 items-center"
+                phx-click="show-profile"
+                phx-value-user-id={@current_user.id}
+              >
+                <img src={~p"/images/one_ring.jpg"} class="h-8 w-8 rounded" />
+                <span class="hover:underline">{@current_user.username}</span>
+              </.link>
+            </div>
           </li>
           <li>
             <.link
@@ -205,6 +214,10 @@ defmodule SlaxWeb.ChatRoomLive do
         </div>
       </div>
     </div>
+    <!-- profile is not assigned on mount that why we call like this --->
+    <%= if assigns[:profile] do %>
+      <.live_component id="profile" module={SlaxWeb.ChatRoomLive.ProfileComponent} user={@profile} />
+    <% end %>
     <.modal
       show={@live_action == :new}
       on_cancel={JS.navigate(~p"/rooms/#{@room}")}
@@ -289,10 +302,19 @@ defmodule SlaxWeb.ChatRoomLive do
       >
         <.icon name="hero-trash" class="h-4 w-4" />
       </button>
-      <img class="h-10 w-10 rounded shrink-0" src={~p"/images/one_ring.jpg"} />
+      <img
+        class="h-10 w-10 rounded shrink-0"
+        phx-click="show-profile"
+        phx-value-user-id={@message.user.id}
+        src={~p"/images/one_ring.jpg"}
+      />
       <div class="ml-2">
         <div class="-mt-1">
-          <.link class="text-sm font-semibold hover:underline">
+          <.link
+            class="text-sm font-semibold hover:underline"
+            phx-click="show-profile"
+            phx-value-user-id={@message.user.id}
+          >
             <span>{@message.user.username}</span>
           </.link>
           <span :if={@timezone} class="ml-1 text-xs text-gray-500">
@@ -486,6 +508,11 @@ defmodule SlaxWeb.ChatRoomLive do
     {:noreply, socket}
   end
 
+  def handle_event("show-profile", %{"user-id" => user_id}, socket) do
+    user = Accounts.get_user!(user_id)
+    {:noreply, assign(socket, :profile, user)}
+  end
+
   def handle_event("submit-message", %{"message" => message_params}, socket) do
     %{current_user: current_user, room: room} = socket.assigns
 
@@ -500,6 +527,10 @@ defmodule SlaxWeb.ChatRoomLive do
       end
 
     {:noreply, socket}
+  end
+
+  def handle_event("close-profile", _, socket) do
+    {:noreply, assign(socket, :profile, nil)}
   end
 
   def handle_event("toggle-topic", _params, socket) do
