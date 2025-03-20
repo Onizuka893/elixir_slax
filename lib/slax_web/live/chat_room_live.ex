@@ -104,7 +104,7 @@ defmodule SlaxWeb.ChatRoomLive do
         </div>
         <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
           <li class="text-[0.8125rem] leading-6 text-zinc-900">
-            {username(@current_user)}
+            {@current_user.username}
           </li>
           <li>
             <.link
@@ -273,7 +273,7 @@ defmodule SlaxWeb.ChatRoomLive do
           <span class="w-2 h-2 rounded-full border-2 border-gray-500"></span>
         <% end %>
       </div>
-      <span class="ml-2 leading-none">{username(@user)}</span>
+      <span class="ml-2 leading-none">{@user.username}</span>
     </.link>
     """
   end
@@ -299,7 +299,7 @@ defmodule SlaxWeb.ChatRoomLive do
       <div class="ml-2">
         <div class="-mt-1">
           <.link class="text-sm font-semibold hover:underline">
-            <span>{username(@message.user)}</span>
+            <span>{@message.user.username}</span>
           </.link>
           <span :if={@timezone} class="ml-1 text-xs text-gray-500">
             {message_timestamp(@message, @timezone)}
@@ -309,10 +309,6 @@ defmodule SlaxWeb.ChatRoomLive do
       </div>
     </div>
     """
-  end
-
-  defp username(user) do
-    user.email |> String.split("@") |> List.first() |> String.capitalize()
   end
 
   defp message_timestamp(message, timezone) do
@@ -358,18 +354,17 @@ defmodule SlaxWeb.ChatRoomLive do
 
     Enum.each(rooms, fn {chat, _} -> Chat.subscribe_to_room(chat) end)
 
-    socket =
-      socket
-      |> assign(rooms: rooms, timezone: timezone, users: users)
-      |> assign(online_users: OnlineUsers.list())
-      |> assign_room_form(Chat.change_room(%Room{}))
-      |> stream_configure(:messages,
-        dom_id: fn
-          %Message{id: id} -> "messages-#{id}"
-          :unread_marker -> "messages-unread-marker"
-        end
-      )
-      |> ok()
+    socket
+    |> assign(rooms: rooms, timezone: timezone, users: users)
+    |> assign(online_users: OnlineUsers.list())
+    |> assign_room_form(Chat.change_room(%Room{}))
+    |> stream_configure(:messages,
+      dom_id: fn
+        %Message{id: id} -> "messages-#{id}"
+        :unread_marker -> "messages-unread-marker"
+      end
+    )
+    |> ok()
   end
 
   defp assign_room_form(socket, changeset) do
