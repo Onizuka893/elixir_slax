@@ -8,6 +8,7 @@ defmodule SlaxWeb.ChatRoomLive do
   alias Slax.Chat.{Message, Room}
   alias SlaxWeb.OnlineUsers
 
+  import SlaxWeb.ChatComponents
   import SlaxWeb.UserComponents
 
   def render(assigns) do
@@ -225,6 +226,18 @@ defmodule SlaxWeb.ChatRoomLive do
         current_user={@current_user}
       />
     <% end %>
+
+    <%= if assigns[:thread] do %>
+      <.live_component
+        id="thread"
+        module={SlaxWeb.ChatRoomLive.ThreadComponent}
+        current_user={@current_user}
+        message={@thread}
+        room={@room}
+        timezone={@timezone}
+      />
+    <% end %>
+
     <.modal
       show={@live_action == :new}
       on_cancel={JS.navigate(~p"/rooms/#{@room}")}
@@ -290,55 +303,6 @@ defmodule SlaxWeb.ChatRoomLive do
       <span class="ml-2 leading-none">{@user.username}</span>
     </.link>
     """
-  end
-
-  attr :current_user, User, required: true
-  attr :dom_id, :string, required: true
-  attr :message, Message, required: true
-  attr :timezone, :string, required: true
-
-  defp message(assigns) do
-    ~H"""
-    <div id={@dom_id} class="group relative flex px-4 py-3">
-      <button
-        :if={@current_user.id == @message.user_id}
-        class="absolute top-4 right-4 text-red-500 hover:text-red-800 cursor-pointer hidden group-hover:block"
-        data-confirm="Are you sure?"
-        phx-click="delete-message"
-        phx-value-id={@message.id}
-      >
-        <.icon name="hero-trash" class="h-4 w-4" />
-      </button>
-      <.user_avatar
-        user={@message.user}
-        class="h-10 w-10 rounded shrink-0"
-        phx-click="show-profile"
-        phx-value-user-id={@message.user.id}
-      />
-      <div class="ml-2">
-        <div class="-mt-1">
-          <.link
-            class="text-sm font-semibold hover:underline"
-            phx-click="show-profile"
-            phx-value-user-id={@message.user.id}
-          >
-            <span>{@message.user.username}</span>
-          </.link>
-          <span :if={@timezone} class="ml-1 text-xs text-gray-500">
-            {message_timestamp(@message, @timezone)}
-          </span>
-          <p class="text-sm">{@message.body}</p>
-        </div>
-      </div>
-    </div>
-    """
-  end
-
-  defp message_timestamp(message, timezone) do
-    message.inserted_at
-    |> Timex.Timezone.convert(Timex.Timezone.local())
-    |> Timex.Timezone.convert(timezone)
-    |> Timex.format!("%-l:%M %p", :strftime)
   end
 
   attr :active, :boolean, required: true
@@ -519,7 +483,11 @@ defmodule SlaxWeb.ChatRoomLive do
 
   def handle_event("show-profile", %{"user-id" => user_id}, socket) do
     user = Accounts.get_user!(user_id)
-    {:noreply, assign(socket, :profile, user)}
+
+    socket
+    |> assign(:profile, user)
+    |> assign(:thread, nil)
+    |> noreply()
   end
 
   def handle_event("submit-message", %{"message" => message_params}, socket) do
@@ -550,6 +518,16 @@ defmodule SlaxWeb.ChatRoomLive do
     changeset = Chat.change_message(%Message{}, message_params)
 
     {:noreply, assign_message_form(socket, changeset)}
+  end
+
+  def handle_event("close-thread", _, socket) do
+    {:noreply, assign(socket, :thread, nil)}
+  end
+
+  def handle_event("show-thread", %{"id" => message_id}, socket) do
+    message = Chat.get_message!(message_id)
+
+    socket |> assign(profile: nil, thread: message) |> noreply()
   end
 
   def handle_info({:new_message, message}, socket) do
