@@ -72,7 +72,7 @@ defmodule SlaxWeb.ChatRoomLive.ProfileComponent do
   def mount(socket) do
     socket
     |> allow_upload(:avatar,
-      accept: ~w(.png, .jpg),
+      accept: ~w(.png .jpg),
       max_entries: 1,
       max_file_size: 2 * 1024 * 1024
     )

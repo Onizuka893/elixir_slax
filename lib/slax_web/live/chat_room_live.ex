@@ -400,6 +400,8 @@ defmodule SlaxWeb.ChatRoomLive do
 
     OnlineUsers.subscribe()
 
+    Accounts.subscribe_to_user_avatar()
+
     Enum.each(rooms, fn {chat, _} -> Chat.subscribe_to_room(chat) end)
 
     socket
@@ -585,6 +587,30 @@ defmodule SlaxWeb.ChatRoomLive do
 
   def handle_info({:message_deleted, message}, socket) do
     {:noreply, stream_delete(socket, :messages, message)}
+  end
+
+  def handle_info({:updated_avatar, user}, socket) do
+    socket
+    |> maybe_update_profile(user)
+    |> maybe_update_current_user(user)
+    |> push_event("update_avatar", %{user_id: user.id, avatar_path: user.avatar_path})
+    |> noreply()
+  end
+
+  defp maybe_update_current_user(socket, user) do
+    if socket.assigns.current_user.id == user.id do
+      assign(socket, :current_user, user)
+    else
+      socket
+    end
+  end
+
+  defp maybe_update_profile(socket, user) do
+    if socket.assigns[:profile] && socket.assigns.profile.id == user.id do
+      assign(socket, :profile, user)
+    else
+      socket
+    end
   end
 
   defp toggle_rooms() do
