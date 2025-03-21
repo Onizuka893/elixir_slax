@@ -218,7 +218,12 @@ defmodule SlaxWeb.ChatRoomLive do
     </div>
     <!-- profile is not assigned on mount that why we call like this --->
     <%= if assigns[:profile] do %>
-      <.live_component id="profile" module={SlaxWeb.ChatRoomLive.ProfileComponent} user={@profile} />
+      <.live_component
+        id="profile"
+        module={SlaxWeb.ChatRoomLive.ProfileComponent}
+        user={@profile}
+        current_user={@current_user}
+      />
     <% end %>
     <.modal
       show={@live_action == :new}
